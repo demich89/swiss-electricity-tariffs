@@ -1,0 +1,14 @@
+{
+  "name": "swiss-electricity-tariffs",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Static Swiss electricity tariff schedules with provider adapters and a public JSON API",
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "fetch": "node scripts/fetch.mjs",
+    "new-provider": "node scripts/new-provider.mjs",
+    "start": "python3 -m http.server 8080 --directory public"
+  },
+  "engines": {"node": ">=22"}
+}

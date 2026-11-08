@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "defaultProviderId": "amb",
+  "providers": [
+    {
+      "id": "amb",
+      "name": "AMB",
+      "fullName": "Azienda Multiservizi Bellinzona",
+      "source": "https://www.amb.ch/",
+      "timezone": "Europe/Zurich",
+      "scheduleType": "high-low",
+      "maxAgeSeconds": 21600,
+      "tariffsUrl": "./providers/amb/tariffs.json"
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+name: Collect tariffs and deploy Pages
+on:
+  schedule:
+    - cron: '17 * * * *'
+  workflow_dispatch:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+jobs:
+  build:
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    outputs:
+      degraded: ${{ steps.health.outputs.degraded }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm test
+      - uses: actions/configure-pages@v5
+        id: pages
+      - name: Collect provider snapshots
+        env:
+          PAGES_BASE_URL: ${{ steps.pages.outputs.base_url }}
+        run: PREVIOUS_SITE_URL="${PAGES_BASE_URL%/}/" npm run fetch
+      - name: Record collection health
+        id: health
+        run: |
+          node --input-type=module <<'JS'
+          import {readFileSync, appendFileSync} from 'node:fs';
+          const catalog = JSON.parse(readFileSync('public/api/v1/providers.json', 'utf8'));
+          const degraded = (catalog.failedProviderIds?.length ?? 0) > 0 ||
+            catalog.providers.some(provider => provider.status !== 'ok');
+          appendFileSync(process.env.GITHUB_OUTPUT, `degraded=${degraded}\n`);
+          JS
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: public
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Publish
+        id: deployment
+        uses: actions/deploy-pages@v4
+  report:
+    name: Report upstream collection failures
+    needs: [build, deploy]
+    if: ${{ needs.build.outputs.degraded == 'true' }}
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: Flag degraded collection after successful publication
+        run: |
+          echo '::error::Some providers failed collection. Valid fresh and retained snapshots were published; inspect collection logs and provider status metadata.'
+          exit 1

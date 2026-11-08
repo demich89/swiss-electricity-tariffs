@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Swiss electricity · Public API</title><link rel="stylesheet" href="../style.css"><link rel="stylesheet" href="./docs.css">
+</head>
+<body><main>
+<header><a data-i18n="brand" class="brand" href="../">Swiss electricity / public API</a><a data-i18n="back" href="../">Tariff website ↗</a><div id="language-switch"></div></header>
+<section class="intro"><p data-i18n="eyebrow" class="eyebrow">OPEN JSON · VERSION 1</p><h1 data-i18n="headline">Tariffs for your application.</h1><p data-i18n="intro">Validated electricity tariff schedules from supported Swiss providers. No account or API key required.</p></section>
+<section><h2 data-i18n="catalogHeading">Discover providers</h2><p data-i18n="catalogText">Discover supported providers, their endpoints and collection status below. Relative tariffsUrl values resolve against the catalog URL. A retained snapshot keeps its original fetch timestamp and expiry.</p><p><a id="catalog-url" href="./v1/providers.json">GET ./v1/providers.json</a></p><p id="catalog-status" role="status"></p><div id="provider-list" class="provider-list"></div><p data-i18n="legacyText">The original v1/tariffs.json endpoint remains an AMB alias. It never changes to another provider. Human-readable API labels are now English; low and high codes are unchanged.</p></section>
+<section><h2 data-i18n="endpointHeading">Choose a provider endpoint</h2><label for="docs-provider" data-i18n="providerLabel">Provider</label><select id="docs-provider" name="docs-provider" disabled></select><p><a id="endpoint" href="./v1/providers.json" data-i18n="chooseProvider">Choose a provider to view its endpoint and examples.</a></p><button data-i18n="copy" id="copy" type="button" disabled>Copy endpoint</button><span id="copied" role="status"></span><p data-i18n="fetchPolicy">Use GET. The snapshot is updated after each successful scheduled fetch, approximately hourly. GitHub Actions may be delayed. Always check data age and interval boundaries.</p><pre id="curl"></pre></section>
+<section><h2 data-i18n="catalogExampleHeading">Provider catalog response</h2><pre id="catalog-example"></pre><div class="table-wrap"><table><thead><tr><th scope="col" data-i18n="field">Field</th><th scope="col" data-i18n="meaning">Meaning</th></tr></thead><tbody><tr><td>status</td><td data-i18n="statusMeaning">ok: fresh collection; stale: previous deployed data reused after failure.</td></tr><tr><td>lastAttemptAt</td><td data-i18n="attemptMeaning">UTC ISO 8601: completion time of the latest collection attempt.</td></tr><tr><td>lastSuccessAt</td><td data-i18n="successMeaning">UTC ISO 8601: original snapshot fetchedAt, unchanged on reuse.</td></tr><tr><td>failedProviderIds</td><td data-i18n="failuresMeaning">IDs of failed providers, including providers omitted because no valid earlier data exists.</td></tr></tbody></table></div></section>
+<section><h2 data-i18n="responseHeading">The response</h2><p data-i18n="responseNote">The example below is illustrative. Intervals are sorted, do not overlap and last no more than 15 minutes.</p><pre>{
+  "version": 1,
+  "provider": "Example utility",
+  "providerId": "example",
+  "source": "https://example.com/",
+  "independent": true,
+  "timezone": "Europe/Zurich",
+  "fetchedAt": "2026-11-07T12:00:00.000Z",
+  "staleAfter": "2026-11-07T18:00:00.000Z",
+  "maxIntervalSeconds": 900,
+  "timestampUnit": "milliseconds",
+  "tariffs": {
+    "low": {
+      "label": "Low tariff",
+      "color": "#05DA3A"
+    },
+    "high": {
+      "label": "High tariff",
+      "color": "#E3051B"
+    }
+  },
+  "intervals": [
+    {
+      "start": 1794052800000,
+      "end": 1794053700000,
+      "tariff": "low"
+    }
+  ]
+}</pre>
+<div class="table-wrap"><table><thead><tr><th data-i18n="field" scope="col">Field</th><th data-i18n="meaning" scope="col">Meaning</th></tr></thead><tbody>
+<tr><td data-i18n="freshnessField">fetchedAt / staleAfter</td><td data-i18n="freshnessMeaning">UTC ISO 8601: last successful fetch and provider-specific expiry.</td></tr>
+<tr><td data-i18n="intervalField">start / end</td><td data-i18n="intervalMeaning">UTC Unix milliseconds. Start inclusive, end exclusive.</td></tr>
+<tr><td data-i18n="tariffField">tariff</td><td data-i18n="tariffMeaning">low or high. Outside the intervals, the tariff is unknown.</td></tr>
+<tr><td data-i18n="timezoneField">timezone</td><td data-i18n="timezoneMeaning">Use Europe/Zurich for display and local day boundaries.</td></tr>
+</tbody></table></div></section>
+<section><h2 data-i18n="exampleHeading">JavaScript example</h2><p data-i18n="exampleNote">Works in Node.js 22+. In browsers, access from another website depends on the hosting CORS headers. The tariff website uses the same origin.</p><pre id="example"></pre><p data-i18n="stalePolicy">For stale data, show a warning or reject the data in your application. Never extend an expired interval. A missing interval means unknown, even if the previous tariff was low.</p></section>
+<section><h2 data-i18n="usageHeading">Usage guidelines</h2><p data-i18n="limitations">This is a static read API: no authentication, query filters, writes, historical archive or live server calculation. Query parameters do not filter the snapshot. Filter locally for your period; account for 23-hour and 25-hour days.</p><p data-i18n="polling">Poll at most once every five minutes and use a timeout. Check the HTTP status and JSON structure. If a fetch fails, the previous publication remains available; availability is not guaranteed. Existing v1 fields and meanings remain stable; new fields may be added. Breaking changes receive a new version path.</p></section>
+<footer><p data-i18n="disclaimer">Independent overview, not an official provider API. No rights are claimed over source data; this API grants no additional licence to provider data.</p></footer>
+</main><script type="module" src="./docs.js"></script></body></html>
