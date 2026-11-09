@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {tariffAt,nextSwitch,segments,dayBounds,utcDays,validateData} from '../public/tariffs.js';
-import {normalize} from '../src/providers/amb.mjs';
+import {normalize,zurichWallTime} from '../src/providers/amb.mjs';
 const response=(labels,bgColors)=>({labels,bgColors});
-const a='2026-11-07T00:00:00+00:00',b='2026-11-07T00:15:00Z';
+const a='2026-11-07T00:00:00+00:00',b='2026-11-07T00:15:00Z',at=zurichWallTime;
 test('validates arrays, dates, UTC timestamps and colors',()=>{
  for(const r of [response([a],[]),response(['bad'],['#05DA3A']),response(['2026-02-30T00:00:00Z'],['#05DA3A']),response(['2026-11-07T00:00:00+01:00'],['#05DA3A']),response([a],['red']),response([a],['toString'])]) assert.throws(()=>normalize([r]));
 });
@@ -14,15 +14,28 @@ test('sorts and merges identical duplicates; rejects conflicts',()=>{
 });
 test('intervals expire after 15 minutes; gaps stay unknown; ends are exclusive',()=>{
  const xs=normalize([response([a,'2026-11-07T01:00:00Z'],['#05DA3A','#E3051B'])]);
- assert.equal(tariffAt(xs,Date.parse(a)),'low');
- assert.equal(tariffAt(xs,Date.parse(b)),'unknown');
- assert.equal(nextSwitch(xs,Date.parse(a)),null);
- assert.equal(segments(xs,'2026-11-07').filter(x=>x.tariff==='unknown').length,3);
+ assert.equal(tariffAt(xs,at(a)),'low');
+ assert.equal(tariffAt(xs,at(b)),'unknown');
+ assert.equal(nextSwitch(xs,at(a)),null);
+ assert.equal(segments(xs,'2026-11-07').filter(x=>x.tariff==='unknown').length,2);
 });
 test('predicts changes only within continuous coverage',()=>{
  const xs=normalize([response([a,b],['#05DA3A','#E3051B'])]);
- assert.equal(nextSwitch(xs,Date.parse(a)).start,Date.parse(b));
- assert.equal(nextSwitch(xs,Date.parse(b)),null);
+ assert.equal(nextSwitch(xs,at(a)).start,at(b));
+ assert.equal(nextSwitch(xs,at(b)),null);
+});
+test('reads labels as Zurich wall-clock time, as amb.ch displays them',()=>{
+ const [winter]=normalize([response(['2026-11-09T06:45:00+00:00'],['#E3051B'])]);
+ assert.equal(winter.start,Date.parse('2026-11-09T05:45:00Z'));
+ const [summer]=normalize([response(['2026-07-01T06:45:00Z'],['#E3051B'])]);
+ assert.equal(summer.start,Date.parse('2026-07-01T04:45:00Z'));
+ assert.equal(segments([winter],'2026-11-09').find(x=>x.tariff==='high').start,Date.parse('2026-11-09T05:45:00Z'));
+});
+test('maps DST wall times: skipped spring times dropped, repeated autumn hour taken once',()=>{
+ assert.equal(zurichWallTime('2026-03-29T02:30:00Z'),null);
+ assert.equal(zurichWallTime('2026-03-29T03:00:00Z'),Date.parse('2026-03-29T01:00:00Z'));
+ assert.equal(zurichWallTime('2026-10-25T02:30:00Z'),Date.parse('2026-10-25T00:30:00Z'));
+ assert.equal(normalize([response(['2026-03-29T02:00:00Z','2026-03-29T03:00:00Z'],['#05DA3A','#E3051B'])]).length,1);
 });
 test('clips overlapping short intervals',()=>{
  const xs=normalize([response([a,'2026-11-07T00:05:00Z'],['#05DA3A','#E3051B'])]);

@@ -23,7 +23,7 @@ Pass the points to `pointsToIntervals()` from `src/lib/intervals.mjs`. It sorts 
 
 Return only confirmed readings. Never synthesize prices or fetch times. If the official source publishes longer periods, emit one reading per 15 minutes only if the source guarantees that coverage.
 
-The orchestrator supplies a single collection reference time and sets `fetchedAt` after each adapter succeeds. Use `utcDays()` only for sources whose day semantics match AMB's UTC-day API. The current browser supports Europe/Zurich only.
+The orchestrator supplies a single collection reference time and sets `fetchedAt` after each adapter succeeds. Use `utcDays()` only for sources whose day semantics match AMB's API. Check how the provider's own website renders timestamps: AMB's `+00:00` labels are really Zurich wall-clock time. The current browser supports Europe/Zurich only.
 
 ## 3. Register and test
 
